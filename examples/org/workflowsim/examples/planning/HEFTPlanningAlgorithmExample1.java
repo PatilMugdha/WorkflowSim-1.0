@@ -69,7 +69,66 @@ public class HEFTPlanningAlgorithmExample1 extends WorkflowSimBasicExample1{
             vm[i] = new CondorVM(i, userId, mips * ratio, pesNumber, ram, (long) (bw * ratio), size, vmm, new CloudletSchedulerSpaceShared());
             list.add(vm[i]);
         }
+        return list;
+    }
+    
+    protected static List<CondorVM> createTenFixedVM(int userId) {
 
+        //Creates a container to store VMs. This list is passed to the broker later
+        LinkedList<CondorVM> list = new LinkedList<CondorVM>();
+
+        //VM Parameters
+        long size = 10000; //image size (MB)
+        int ram = 512; //vm memory (MB)
+        int mips = 1000;
+        long bw = 1000;
+        int pesNumber = 1; //number of cpus
+        String vmm = "Xen"; //VMM name
+
+        //create VMs
+        CondorVM[] vm = new CondorVM[10];
+        
+		vm[0] = new CondorVM(0, userId, 220, 1, 2048, (long) 1000, size, vmm,
+				new CloudletSchedulerSpaceShared());
+		list.add(vm[0]);
+		
+		vm[1] = new CondorVM(1, userId, 198, 2, 2048, (long) 900, size, vmm,
+				new CloudletSchedulerSpaceShared());
+		list.add(vm[1]);
+		
+		vm[2] = new CondorVM(2, userId, 152, 2, 2048, (long) 850, size, vmm,
+				new CloudletSchedulerSpaceShared());
+		list.add(vm[2]);
+		
+		vm[3] = new CondorVM(3, userId, 144, 4, 2048, (long) 725, size, vmm,
+				new CloudletSchedulerSpaceShared());
+		list.add(vm[3]);
+		
+		vm[4] = new CondorVM(4, userId, 110, 1, 2048, (long) 500, size, vmm,
+				new CloudletSchedulerSpaceShared());
+		list.add(vm[4]);
+		
+		vm[5] = new CondorVM(5, userId, 198, 2, 2048, (long) 550, size, vmm,
+				new CloudletSchedulerSpaceShared());
+		list.add(vm[5]);
+		
+		vm[6] = new CondorVM(6, userId, 120, 4, 2048, (long) 800, size, vmm,
+				new CloudletSchedulerSpaceShared());
+		list.add(vm[6]);
+		
+		vm[7] = new CondorVM(7, userId, 150, 4, 2048, (long) 950, size, vmm,
+				new CloudletSchedulerSpaceShared());
+		list.add(vm[7]);
+		
+		vm[8] = new CondorVM(8, userId, 120, 2, 2048, (long) 750, size, vmm,
+				new CloudletSchedulerSpaceShared());
+		list.add(vm[8]);
+		
+		vm[9] = new CondorVM(9, userId, 200, 1, 2048, (long) 625, size, vmm,
+				new CloudletSchedulerSpaceShared());
+		list.add(vm[9]);
+        
+        
         return list;
     }
 
@@ -92,7 +151,7 @@ public class HEFTPlanningAlgorithmExample1 extends WorkflowSimBasicExample1{
             /**
              * Should change this based on real physical path
              */
-            String daxPath = "/Users/chenweiwei/Work/WorkflowSim-1.0/config/dax/Montage_100.xml";
+            String daxPath = "C:/Users/patil/git/WorkflowSim-1.0/config/dax/Epigenomics_24.xml";
             
             File daxFile = new File(daxPath);
             if(!daxFile.exists()){

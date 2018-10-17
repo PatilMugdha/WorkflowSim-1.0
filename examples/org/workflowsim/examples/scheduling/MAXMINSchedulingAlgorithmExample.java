@@ -55,11 +55,11 @@ public class MAXMINSchedulingAlgorithmExample extends DataAwareSchedulingAlgorit
              * the data center or the host doesn't have sufficient resources the
              * exact vmNum would be smaller than that. Take care.
              */
-            int vmNum = 5;//number of vms;
+            int vmNum = 10;//number of vms;
             /**
              * Should change this based on real physical path
              */
-            String daxPath = "/Users/chenweiwei/Work/WorkflowSim-1.0/config/dax/Montage_100.xml";
+            String daxPath = "C:/Users/patil/git/WorkflowSim-1.0/config/dax/Epigenomics_24.xml";
             
             File daxFile = new File(daxPath);
             if(!daxFile.exists()){
@@ -116,8 +116,8 @@ public class MAXMINSchedulingAlgorithmExample extends DataAwareSchedulingAlgorit
              * Create a list of VMs.The userId of a vm is basically the id of
              * the scheduler that controls this vm.
              */
-            List<CondorVM> vmlist0 = createVM(wfEngine.getSchedulerId(0), Parameters.getVmNum());
-
+            //List<CondorVM> vmlist0 = createVM(wfEngine.getSchedulerId(0), Parameters.getVmNum());
+            List<CondorVM> vmlist0 = createTenFixedVM(wfEngine.getSchedulerId(0)); 
             /**
              * Submits this list of vms to this WorkflowEngine.
              */
