@@ -77,7 +77,7 @@
     <uses file="chr21.0.4.nocontam.fq" link="input" register="true" transfer="true" optional="false" type="data" size="37310027"/>
     <uses file="chr21.0.4.nocontam.bfq" link="output" register="true" transfer="true" optional="false" type="data" size="9039432"/>
   </job>
-  <job id="ID00016" namespace="Genome" name="map_chr21" version="1.0" runtime="2830.54" duration="25000">
+<!--   <job id="ID00016" namespace="Genome" name="map_chr21" version="1.0" runtime="2830.54" duration="25000">
     <uses file="chr21.BS.bfa" link="input" register="true" transfer="true" optional="false" type="data" size="1249174122"/>
     <uses file="chr21.0.0.nocontam.bfq" link="input" register="true" transfer="true" optional="false" type="data" size="6918721"/>
     <uses file="chr21.0.0.nocontam.map" link="output" register="true" transfer="true" optional="false" type="data" size="7520348"/>
@@ -96,7 +96,7 @@
     <uses file="chr21.BS.bfa" link="input" register="true" transfer="true" optional="false" type="data" size="1249174122"/>
     <uses file="chr21.0.3.nocontam.bfq" link="input" register="true" transfer="true" optional="false" type="data" size="9015905"/>
     <uses file="chr21.0.3.nocontam.map" link="output" register="true" transfer="true" optional="false" type="data" size="9799896"/>
-  </job>
+  </job>-->
   <job id="ID00020" namespace="Genome" name="map_chr21" version="1.0" runtime="4062.96" duration="30000">
     <uses file="chr21.BS.bfa" link="input" register="true" transfer="true" optional="false" type="data" size="1249174122"/>
     <uses file="chr21.0.4.nocontam.bfq" link="input" register="true" transfer="true" optional="false" type="data" size="9039432"/>
@@ -184,10 +184,15 @@
   </child>
   <child ref="ID00021">
     <parent ref="ID00020"/>
-    <parent ref="ID00016"/>
+<!--     <parent ref="ID00016"/>
     <parent ref="ID00017"/>
     <parent ref="ID00018"/>
     <parent ref="ID00019"/>
+    -->
+    <parent ref="ID00014"/>
+    <parent ref="ID00013"/>
+    <parent ref="ID00012"/>
+    <parent ref="ID00011"/>
   </child>
   <child ref="ID00022">
     <parent ref="ID00021"/>

@@ -100,11 +100,9 @@ public class CriticalPathBasedSchedulingAlgorithm extends BasePlanningAlgorithm 
 					costsVm.put(vm, Double.MAX_VALUE);
 				} else {
 
-					//System.out.println("T(" + task.getCloudletId() + "):" + task.getDuration() + ": "
-					//		+ (task.getCloudletLength() / vm.getMips()));
 					if ((task.getCloudletLength() / vm.getMips()) <= taskDuration) {
 						costsVm.put(vm,
-								((task.getCloudletTotalLength() / vm.getMips()) + (transferCosts.get(task)*vm.getBw())) / 2);
+								task.getCloudletTotalLength() / vm.getMips()); //+ (transferCosts.get(task)*vm.getBw())) / 2);
 					}
 
 				}
@@ -119,19 +117,22 @@ public class CriticalPathBasedSchedulingAlgorithm extends BasePlanningAlgorithm 
 	}
 
 	private void checkCriticalPath() {
-
+        int criticalTasks = 0;
+        int nonCriticalTasks = 0;
+        
 		for (Object taskObject : getTaskList()) {
 			Task task = (Task) taskObject;
-			if ((task.getLateFinishTime() - task.getEarlyFinishTime()) == (task.getLateStartTime()
-					- task.getEarlyStartTime())) {
-				task.setSlack(task.getLateFinishTime() - task.getEarlyFinishTime());
+			task.setSlack(task.getLateFinishTime() - task.getEarlyFinishTime());
+			if (task.getSlack() == 0) {
 				task.setCritical(true);
+				criticalTasks++;
 			} else {
-				task.setSlack(task.getLateFinishTime() - task.getEarlyFinishTime());
 				task.setCritical(false);
+				nonCriticalTasks++;
 			}
 			statusUpdatedTaskList.add(task);
 		}
+		Log.printLine("CriticalTasks: "+criticalTasks+" NonCriticalTasks: "+nonCriticalTasks);
 	}
 
 	private void backwardPass() {
@@ -141,17 +142,17 @@ public class CriticalPathBasedSchedulingAlgorithm extends BasePlanningAlgorithm 
 
 			if (task.getChildList().size() == 0) {
 				task.setLateFinishTime(task.getEarlyFinishTime());
-				task.setLateStartTime(task.getLateFinishTime() - task.getCloudletLength());
+				task.setLateStartTime(task.getLateFinishTime() - task.getDuration());
 			} else {
 				double min = Double.MAX_VALUE;
 				for (j = 0; j < task.getChildList().size(); j++) {
 
-					if (task.getChildList().get(j).getLateFinishTime() < min) {
-						min = task.getChildList().get(j).getLateFinishTime();
+					if (task.getChildList().get(j).getLateStartTime() < min) {
+						min = task.getChildList().get(j).getLateStartTime();
 					}
 				}
 				task.setLateFinishTime(min);
-				task.setLateStartTime(task.getLateFinishTime() - task.getCloudletLength());
+				task.setLateStartTime(task.getLateFinishTime() - task.getDuration());
 			}
 			System.out.println("LF(" + task.getCloudletId() + "): " + task.getCloudletLength() + " "
 					+ task.getLateFinishTime() + " " + task.getLateStartTime());
@@ -164,7 +165,7 @@ public class CriticalPathBasedSchedulingAlgorithm extends BasePlanningAlgorithm 
 			Task task = (Task) taskObject;
 			if (task.getParentList().size() == 0) {
 				task.setEarlyStartTime(0);
-				task.setEarlyFinishTime(task.getCloudletLength());
+				task.setEarlyFinishTime(task.getDuration());
 			} else {
 				double max = Integer.MIN_VALUE;
 				for (int i = 0; i < task.getParentList().size(); i++) {
@@ -173,7 +174,7 @@ public class CriticalPathBasedSchedulingAlgorithm extends BasePlanningAlgorithm 
 					}
 				}
 				task.setEarlyStartTime(max);
-				task.setEarlyFinishTime(task.getEarlyStartTime() + task.getCloudletLength());
+				task.setEarlyFinishTime(task.getEarlyStartTime() + task.getDuration());
 			}
 		}
 	}
