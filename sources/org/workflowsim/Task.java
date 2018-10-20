@@ -84,7 +84,72 @@ public class Task extends Cloudlet {
      * @pre taskLength >= 0.0
      * @post $none
      */
-    public Task(
+    
+    private double earlyStartTime;
+    private double earlyFinishTime;
+    private double lateStartTime;
+    private double lateFinishTime;
+    private double slack;
+    private boolean isCritical;
+    private double duration;
+    
+    public double getDuration() {
+		return duration;
+	}
+
+	public void setDuration(double duration) {
+		this.duration = duration;
+	}
+
+	public boolean isCritical() {
+		return isCritical;
+	}
+
+	public void setCritical(boolean isCritical) {
+		this.isCritical = isCritical;
+	}
+
+	public double getSlack() {
+		return slack;
+	}
+
+	public void setSlack(double slack) {
+		this.slack = slack;
+	}
+
+	public double getEarlyStartTime() {
+		return earlyStartTime;
+	}
+
+	public void setEarlyStartTime(double earlyStartTime) {
+		this.earlyStartTime = earlyStartTime;
+	}
+
+	public double getEarlyFinishTime() {
+		return earlyFinishTime;
+	}
+
+	public void setEarlyFinishTime(double earlyFinishTime) {
+		this.earlyFinishTime = earlyFinishTime;
+	}
+
+	public double getLateStartTime() {
+		return lateStartTime;
+	}
+
+	public void setLateStartTime(double lateStartTime) {
+		this.lateStartTime = lateStartTime;
+	}
+
+	public double getLateFinishTime() {
+		return lateFinishTime;
+	}
+
+	public void setLateFinishTime(double lateFinishTime) {
+		this.lateFinishTime = lateFinishTime;
+	}
+
+	public Task(
             final int taskId,
             final long taskLength) {
         /**

@@ -25,6 +25,7 @@ import org.workflowsim.planning.BasePlanningAlgorithm;
 import org.workflowsim.planning.DHEFTPlanningAlgorithm;
 import org.workflowsim.planning.HEFTPlanningAlgorithm;
 import org.workflowsim.planning.RandomPlanningAlgorithm;
+import org.workflowsim.scheduling.CriticalPathBasedSchedulingAlgorithm;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.Parameters.PlanningAlgorithm;
 
@@ -135,6 +136,7 @@ public class WorkflowPlanner extends SimEntity {
     public void processEvent(SimEvent ev) {
         switch (ev.getTag()) {
             case WorkflowSimTags.START_SIMULATION:
+            	System.out.println("StartSim: "+WorkflowSimTags.START_SIMULATION);
                 getWorkflowParser().parse();
                 setTaskList(getWorkflowParser().getTaskList());
 
@@ -194,6 +196,9 @@ public class WorkflowPlanner extends SimEntity {
                 break;
             case DHEFT:
                 planner = new DHEFTPlanningAlgorithm();
+                break;
+            case CRITICAL_PATH:
+                planner = new CriticalPathBasedSchedulingAlgorithm();
                 break;
             default:
                 planner = null;

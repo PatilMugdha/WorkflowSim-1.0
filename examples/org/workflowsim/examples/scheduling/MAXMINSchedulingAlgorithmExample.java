@@ -25,6 +25,7 @@ import org.workflowsim.WorkflowDatacenter;
 import org.workflowsim.Job;
 import org.workflowsim.WorkflowEngine;
 import org.workflowsim.WorkflowPlanner;
+import org.workflowsim.examples.planning.CriticalPathBasedSchedulingAlgorithmExample;
 import org.workflowsim.utils.ClusteringParameters;
 import org.workflowsim.utils.OverheadParameters;
 import org.workflowsim.utils.Parameters;
@@ -117,7 +118,7 @@ public class MAXMINSchedulingAlgorithmExample extends DataAwareSchedulingAlgorit
              * the scheduler that controls this vm.
              */
             //List<CondorVM> vmlist0 = createVM(wfEngine.getSchedulerId(0), Parameters.getVmNum());
-            List<CondorVM> vmlist0 = createTenFixedVM(wfEngine.getSchedulerId(0)); 
+            List<CondorVM> vmlist0 = CriticalPathBasedSchedulingAlgorithmExample.createTenFixedVM(wfEngine.getSchedulerId(0)); 
             /**
              * Submits this list of vms to this WorkflowEngine.
              */
@@ -136,6 +137,7 @@ public class MAXMINSchedulingAlgorithmExample extends DataAwareSchedulingAlgorit
             CloudSim.stopSimulation();
 
             printJobList(outputList0);
+            System.out.println("TotalCost: "+wfEngine.getScheduler(0).getTotalCost());
 
 
         } catch (Exception e) {

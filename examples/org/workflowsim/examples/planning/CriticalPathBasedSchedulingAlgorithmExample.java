@@ -1,47 +1,89 @@
-/**
- * Copyright 2012-2013 University Of Southern California
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
-package org.workflowsim.examples.scheduling;
+package org.workflowsim.examples.planning;
 
 import java.io.File;
 import java.util.Calendar;
+import java.util.LinkedList;
 import java.util.List;
+
+import org.cloudbus.cloudsim.CloudletSchedulerSpaceShared;
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.workflowsim.CondorVM;
-import org.workflowsim.WorkflowDatacenter;
 import org.workflowsim.Job;
+import org.workflowsim.WorkflowDatacenter;
 import org.workflowsim.WorkflowEngine;
 import org.workflowsim.WorkflowPlanner;
-import org.workflowsim.examples.planning.CriticalPathBasedSchedulingAlgorithmExample;
+import org.workflowsim.examples.WorkflowSimBasicExample1;
 import org.workflowsim.utils.ClusteringParameters;
 import org.workflowsim.utils.OverheadParameters;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.ReplicaCatalog;
 
-/**
- * This MINMIN Scheduling Algorithm 
- *
- * @author Weiwei Chen
- * @since WorkflowSim Toolkit 1.1
- * @date Nov 9, 2013
- */
-public class MINMINSchedulingAlgorithmExample extends DataAwareSchedulingAlgorithmExample{
+public class CriticalPathBasedSchedulingAlgorithmExample extends WorkflowSimBasicExample1{
+	   ////////////////////////// STATIC METHODS ///////////////////////
+	   public static List<CondorVM> createTenFixedVM(int userId) {
 
-    ////////////////////////// STATIC METHODS ///////////////////////
-    /**
+	        //Creates a container to store VMs. This list is passed to the broker later
+	        LinkedList<CondorVM> list = new LinkedList<CondorVM>();
+
+	        //VM Parameters
+	        long size = 10000; //image size (MB)
+	        int ram = 512; //vm memory (MB)
+	        int mips = 1000;
+	        long bw = 1000;
+	        int pesNumber = 1; //number of cpus
+	        String vmm = "Xen"; //VMM name
+
+	        //create VMs
+	        CondorVM[] vm = new CondorVM[10];
+	        
+			vm[0] = new CondorVM(0, userId, 120, 1, 2048, (long) 300, size, vmm, 
+					new CloudletSchedulerSpaceShared());
+			list.add(vm[0]);
+			
+			vm[1] = new CondorVM(1, userId, 198, 2, 2048, (long) 900, size, vmm, 
+					new CloudletSchedulerSpaceShared());
+			list.add(vm[1]);
+			
+			vm[2] = new CondorVM(2, userId, 152, 2, 2048, (long) 850, size, vmm, 
+					new CloudletSchedulerSpaceShared());
+			list.add(vm[2]);
+			
+			vm[3] = new CondorVM(3, userId, 144, 4, 2048, (long) 725, size, vmm, 
+					new CloudletSchedulerSpaceShared());
+			list.add(vm[3]);
+			
+			vm[4] = new CondorVM(4, userId, 230, 1, 2048, (long) 300, size, vmm, 
+					new CloudletSchedulerSpaceShared());
+			list.add(vm[4]);
+			
+			vm[5] = new CondorVM(5, userId, 498, 2, 2048, (long) 350, size, vmm, 
+					new CloudletSchedulerSpaceShared());
+			list.add(vm[5]);
+			
+			vm[6] = new CondorVM(6, userId, 120, 4, 2048, (long) 800, size, vmm, 
+					new CloudletSchedulerSpaceShared());
+			list.add(vm[6]);
+			
+			vm[7] = new CondorVM(7, userId, 150, 4, 2048, (long) 950, size, vmm, 
+					new CloudletSchedulerSpaceShared());
+			list.add(vm[7]);
+			
+			vm[8] = new CondorVM(8, userId, 120, 2, 2048, (long) 750, size, vmm, 
+					new CloudletSchedulerSpaceShared());
+			list.add(vm[8]);
+			
+			vm[9] = new CondorVM(9, userId, 110, 1, 2048, (long) 625, size, vmm, 
+					new CloudletSchedulerSpaceShared());
+			list.add(vm[9]);
+	        
+	        
+	        return list;
+	    }
+	
+	
+	
+	/**
      * Creates main() to run this example This example has only one datacenter
      * and one storage
      */
@@ -72,8 +114,8 @@ public class MINMINSchedulingAlgorithmExample extends DataAwareSchedulingAlgorit
              * Since we are using HEFT planning algorithm, the scheduling algorithm should be static 
              * such that the scheduler would not override the result of the planner
              */
-            Parameters.SchedulingAlgorithm sch_method = Parameters.SchedulingAlgorithm.MINMIN;
-            Parameters.PlanningAlgorithm pln_method = Parameters.PlanningAlgorithm.INVALID;
+            Parameters.SchedulingAlgorithm sch_method = Parameters.SchedulingAlgorithm.STATIC;
+            Parameters.PlanningAlgorithm pln_method = Parameters.PlanningAlgorithm.CRITICAL_PATH;
             ReplicaCatalog.FileSystem file_system = ReplicaCatalog.FileSystem.LOCAL;
 
             /**
@@ -118,7 +160,7 @@ public class MINMINSchedulingAlgorithmExample extends DataAwareSchedulingAlgorit
              * the scheduler that controls this vm.
              */
             //List<CondorVM> vmlist0 = createVM(wfEngine.getSchedulerId(0), Parameters.getVmNum());
-            List<CondorVM> vmlist0 = CriticalPathBasedSchedulingAlgorithmExample.createTenFixedVM(wfEngine.getSchedulerId(0)); 
+            List<CondorVM> vmlist0 = createTenFixedVM(wfEngine.getSchedulerId(0)); 
             /**
              * Submits this list of vms to this WorkflowEngine.
              */
@@ -137,13 +179,10 @@ public class MINMINSchedulingAlgorithmExample extends DataAwareSchedulingAlgorit
             CloudSim.stopSimulation();
 
             printJobList(outputList0);
-            System.out.println("TotalCost: "+wfEngine.getScheduler(0).getTotalCost());
 
 
         } catch (Exception e) {
             Log.printLine("The simulation has been terminated due to an unexpected error");
         }
-    }
-
-    
+    }   
 }

@@ -210,6 +210,7 @@ public class WorkflowParser {
                     long length = 0;
                     String nodeName = node.getAttributeValue("id");
                     String nodeType = node.getAttributeValue("name");
+                    double duration=0;
 
                     /**
                      * capture runtime. If not exist, by default the runtime is
@@ -228,6 +229,14 @@ public class WorkflowParser {
                     }
                     //multiple the scale, by default it is 1.0
                     length *= Parameters.getRuntimeScale();
+                    
+                    /*
+                     * 
+                     * */
+                    if (node.getAttributeValue("duration") != null) {
+                      duration =  Double.parseDouble(node.getAttributeValue("duration"));
+
+                    }
                     
                     List fileList = node.getChildren();
 
@@ -313,7 +322,7 @@ public class WorkflowParser {
                     Task task = new Task(idIndex, length);
 
                     task.setType(nodeType);
-
+                    task.setDuration(duration);
                     task.setUserId(userId);
                     idIndex++;
                     mName2Task.put(nodeName, task);

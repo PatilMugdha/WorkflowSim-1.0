@@ -29,6 +29,7 @@ import org.cloudbus.cloudsim.lists.VmList;
 import org.workflowsim.failure.FailureGenerator;
 import org.workflowsim.scheduling.DataAwareSchedulingAlgorithm;
 import org.workflowsim.scheduling.BaseSchedulingAlgorithm;
+import org.workflowsim.scheduling.CriticalPathBasedSchedulingAlgorithm;
 import org.workflowsim.scheduling.FCFSSchedulingAlgorithm;
 import org.workflowsim.scheduling.MCTSchedulingAlgorithm;
 import org.workflowsim.scheduling.MaxMinSchedulingAlgorithm;
@@ -241,6 +242,7 @@ public class WorkflowScheduler extends DatacenterBroker {
      *
      * @param ev a simEvent object
      */
+    Double totalCost=0.0;
     protected void processCloudletUpdate(SimEvent ev) {
 
         BaseSchedulingAlgorithm scheduler = getScheduler(Parameters.getSchedulingAlgorithm());
@@ -255,6 +257,7 @@ public class WorkflowScheduler extends DatacenterBroker {
         }
 
         List scheduledList = scheduler.getScheduledList();
+ 
         for (Iterator it = scheduledList.iterator(); it.hasNext();) {
             Cloudlet cloudlet = (Cloudlet) it.next();
             int vmId = cloudlet.getVmId();
@@ -263,15 +266,22 @@ public class WorkflowScheduler extends DatacenterBroker {
                 delay = Parameters.getOverheadParams().getQueueDelay(cloudlet);
             }
             schedule(getVmsToDatacentersMap().get(vmId), delay, CloudSimTags.CLOUDLET_SUBMIT, cloudlet);
-
+            totalCost+=cloudlet.getCloudletTotalLength()/((CondorVM)scheduler.getVmList().get(vmId)).getMips();
         }
         getCloudletList().removeAll(scheduledList);
         getCloudletSubmittedList().addAll(scheduledList);
         cloudletsSubmitted += scheduledList.size();
-
     }
 
-    /**
+    public Double getTotalCost() {
+		return totalCost;
+	}
+
+	public void setTotalCost(Double totalCost) {
+		this.totalCost = totalCost;
+	}
+
+	/**
      * Process a cloudlet (job) return event.
      *
      * @param ev a SimEvent object
