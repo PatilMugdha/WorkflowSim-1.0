@@ -154,8 +154,8 @@ public class CriticalPathBasedSchedulingAlgorithm extends BasePlanningAlgorithm 
 				task.setLateFinishTime(min);
 				task.setLateStartTime(task.getLateFinishTime() - task.getDuration());
 			}
-			System.out.println("LF(" + task.getCloudletId() + "): " + task.getCloudletLength() + " "
-					+ task.getLateFinishTime() + " " + task.getLateStartTime());
+			//System.out.println("LF(" + task.getCloudletId() + "): " + task.getCloudletLength() + " "
+			//		+ task.getLateFinishTime() + " " + task.getLateStartTime());
 		}
 
 	}

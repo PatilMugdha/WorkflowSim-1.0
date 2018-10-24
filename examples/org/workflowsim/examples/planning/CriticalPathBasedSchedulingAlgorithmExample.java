@@ -49,7 +49,7 @@ public class CriticalPathBasedSchedulingAlgorithmExample extends WorkflowSimBasi
 					new CloudletSchedulerSpaceShared());
 			list.add(vm[2]);
 			
-			vm[3] = new CondorVM(3, userId, 144, 4, 2048, (long) 725, size, vmm, 
+			vm[3] = new CondorVM(3, userId, 444, 4, 2048, (long) 725, size, vmm, 
 					new CloudletSchedulerSpaceShared());
 			list.add(vm[3]);
 			
@@ -57,7 +57,7 @@ public class CriticalPathBasedSchedulingAlgorithmExample extends WorkflowSimBasi
 					new CloudletSchedulerSpaceShared());
 			list.add(vm[4]);
 			
-			vm[5] = new CondorVM(5, userId, 498, 2, 2048, (long) 350, size, vmm, 
+			vm[5] = new CondorVM(5, userId, 298, 2, 2048, (long) 350, size, vmm, 
 					new CloudletSchedulerSpaceShared());
 			list.add(vm[5]);
 			
