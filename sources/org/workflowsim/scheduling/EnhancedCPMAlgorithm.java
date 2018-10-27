@@ -52,11 +52,27 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 			// sort Vm and get Vm with min cost
 			TreeMap<CondorVM, Double> sortedMap = HelperFunctions.sortMapByValue(costsVm);
 
+			createBags(index, task, sortedMap, costsVm, map);
+
+		}
+	}
+
+/*	private void assignVmToTask() {
+		Map<Integer, List<Integer>> map = createLists();
+		int index = 1;
+		for (int i = 0; i < getTaskList().size(); i++) {
+			Task task = (Task) getTaskList().get(i);
+			Map<CondorVM, Double> costsVm = computationCosts.get(task);
+
+			// sort Vm and get Vm with min cost
+			TreeMap<CondorVM, Double> sortedMap = HelperFunctions.sortMapByValue(costsVm);
+
 			if (task.isCritical()) {
 				Entry<CondorVM, Double> firstEntry = sortedMap.firstEntry();
 				task.setVmId(firstEntry.getKey().getId());
 				totalCost += firstEntry.getValue();
-				System.out.println("task: " + task.getCloudletId() + " is critical, assigned vm: " + task.getVmId());
+				System.out.println("task: " + task.getCloudletId() + " is critical, assigned vm: " + task.getVmId());	
+			
 			} else {
 				// new
 				int size = map.get(task.getDepth()).size();
@@ -69,9 +85,33 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 				System.out.println("VM: " + vm.getId() + " to task: " + task.getCloudletId() + " at index: " + index);
 
 				task.setVmId(vm.getId());
-				totalCost += costsVm.get(vm);
+				totalCost += costsVm.get(vm);		
 			}
 		}
+	}*/
+	
+	private void createBags(int index, Task task, TreeMap<CondorVM, Double> sortedMap, Map<CondorVM, Double> costsVm,
+			Map<Integer, List<Integer>> map) {
+		int size = map.get(task.getDepth()).size();
+		while(true) {
+
+			CondorVM vm = task.isCritical() == true ? sortedMap.firstEntry().getKey()
+					: (CondorVM) sortedMap.keySet().toArray()[index];
+			double spareTime = task.getDuration() - (task.getCloudletLength() / vm.getMips());
+                                  			
+			if (spareTime >= 0) {
+				task.setVmId(vm.getId());
+				totalCost += costsVm.get(vm);
+				System.out.println("VM: " + vm.getId() + " to task: " + task.getCloudletId() + " at index: " + index);
+				break;
+			} else {
+				index++;
+				if (index == size) {
+					index = 1;
+				}
+			}
+		}
+
 	}
 
 	private Map<Integer, List<Integer>> createLists() {

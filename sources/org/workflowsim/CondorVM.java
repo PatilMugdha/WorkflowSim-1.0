@@ -60,6 +60,8 @@ public class CondorVM extends Vm {
      */
     private double cost = 0.0;	
     
+    private double vmIdleTime=0.0;
+    
     /**
      * Creates a new CondorVM object.
      *
@@ -253,4 +255,14 @@ public class CondorVM extends Vm {
         return false;
 
     }
+
+	public double getVmIdleTime() {
+		return vmIdleTime;
+	}
+
+	public void setVmIdleTime(double vmIdleTime) {
+		this.vmIdleTime = vmIdleTime;
+	}
+    
+    
 }
