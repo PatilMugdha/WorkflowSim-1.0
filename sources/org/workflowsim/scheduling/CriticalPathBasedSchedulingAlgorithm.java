@@ -1,9 +1,7 @@
 package org.workflowsim.scheduling;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -43,7 +41,7 @@ public class CriticalPathBasedSchedulingAlgorithm extends BasePlanningAlgorithm 
 	}
 
 	private void assignVmToTask() {
-		//Map<Integer, List<Integer>> map = createLists();
+		// Map<Integer, List<Integer>> map = createLists();
 		int index = 1;
 		for (int i = 0; i < getTaskList().size(); i++) {
 			Task task = (Task) getTaskList().get(i);
@@ -57,8 +55,6 @@ public class CriticalPathBasedSchedulingAlgorithm extends BasePlanningAlgorithm 
 			totalCost += firstEntry.getValue();
 		}
 	}
-
-
 
 	private void selectVMsByExecutionTime() {
 
@@ -91,10 +87,11 @@ public class CriticalPathBasedSchedulingAlgorithm extends BasePlanningAlgorithm 
 				Log.printLine("No VM matches task(" + task.getCloudletId() + ")");
 			} else {
 				Log.printLine("Total VMs matching task(" + task.getCloudletId() + ") are: " + costsVm.size());
-/*				TreeMap<CondorVM, Double> sorted = HelperFunctions.sortMapByValue(costsVm);
-				for (Map.Entry<CondorVM, Double> entry : sorted.entrySet()) {
-					System.out.println(entry.getKey().getId());
-				}*/
+				/*
+				 * TreeMap<CondorVM, Double> sorted = HelperFunctions.sortMapByValue(costsVm);
+				 * for (Map.Entry<CondorVM, Double> entry : sorted.entrySet()) {
+				 * System.out.println(entry.getKey().getId()); }
+				 */
 			}
 			computationCosts.put(task, costsVm);
 		}
