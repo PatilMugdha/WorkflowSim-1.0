@@ -26,6 +26,7 @@ import org.workflowsim.planning.DHEFTPlanningAlgorithm;
 import org.workflowsim.planning.HEFTPlanningAlgorithm;
 import org.workflowsim.planning.RandomPlanningAlgorithm;
 import org.workflowsim.scheduling.CriticalPathBasedSchedulingAlgorithm;
+import org.workflowsim.scheduling.EnhancedCPMAlgorithm;
 import org.workflowsim.utils.Parameters;
 import org.workflowsim.utils.Parameters.PlanningAlgorithm;
 
@@ -199,6 +200,9 @@ public class WorkflowPlanner extends SimEntity {
                 break;
             case CRITICAL_PATH:
                 planner = new CriticalPathBasedSchedulingAlgorithm();
+                break;
+            case ENHANCED_CPM:
+                planner = new EnhancedCPMAlgorithm();
                 break;
             default:
                 planner = null;
