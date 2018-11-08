@@ -25,41 +25,57 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 	private Map<Task, Map<CondorVM, Double>> computationCosts = new HashMap<Task, Map<CondorVM, Double>>();
 	private double averageBandwidth;
 	private double totalCost;
+	private Map<Integer, Double> deadlineMap = new HashMap<Integer, Double>();
+	private HashMap<Integer, Boolean> taskFlags = new HashMap<Integer, Boolean>();
+	private HashMap<Integer, Double> vmMap;
 
 	@Override
 	public void run() throws Exception {
 
 		Log.printLine("Critical path-based algorithm running with " + getTaskList().size() + " tasks.");
 
-		averageBandwidth = calculateAverageBandwidth();
 		forwardPass();
 		backwardPass();
 		checkCriticalPath();
-		calculateTransferCosts();
+		initializeTaskStatus();
 		selectVMsByExecutionTime();
 		assignVmToTask();
 		Log.printLine("Total cost: " + totalCost);
 
 	}
 
-	private void assignVmToTask() {
-		Map<Integer, List<Integer>> map = createLists();
-		int index = 1;
+	private void initializeTaskStatus() {
 		for (int i = 0; i < getTaskList().size(); i++) {
 			Task task = (Task) getTaskList().get(i);
-			Map<CondorVM, Double> costsVm = computationCosts.get(task);
-
-			// sort Vm and get Vm with min cost
-			TreeMap<CondorVM, Double> sortedMap = HelperFunctions.sortMapByValue(costsVm);
-
-			createBags(index, task, sortedMap, costsVm, map);
-
+			taskFlags.put(task.getCloudletId(), false);
 		}
 	}
 
-/*	private void assignVmToTask() {
-		Map<Integer, List<Integer>> map = createLists();
-		int index = 1;
+	private void createDeadlineMap(TreeMap<CondorVM, Double> sortedMap) {
+		for (int i = 0; i < getTaskList().size(); i++) {
+			Task task = (Task) getTaskList().get(i);
+			if (task.isCritical()) {
+				deadlineMap.put(task.getDepth(), task.getCloudletLength() / sortedMap.firstEntry().getKey().getMips());
+                if(deadlineMap.get(task.getDepth())!=null) {
+                	deadlineMap.put(task.getDepth(), task.getCloudletLength() / sortedMap.firstEntry().getKey().getMips());
+                }
+			}
+		}
+
+	}
+
+	private void assignVmToTask() {
+		Map<Integer, List<Integer>> depthList = createLists();
+
+		for (int i = 0; i < getTaskList().size(); i++) {
+			Task task = (Task) getTaskList().get(i);
+			Map<CondorVM, Double> costsVm = computationCosts.get(task);
+
+			// sort Vm and get Vm with min cost
+			TreeMap<CondorVM, Double> sortedMap = HelperFunctions.sortMapByValue(costsVm);
+			createDeadlineMap(sortedMap);
+		}
+
 		for (int i = 0; i < getTaskList().size(); i++) {
 			Task task = (Task) getTaskList().get(i);
 			Map<CondorVM, Double> costsVm = computationCosts.get(task);
@@ -67,51 +83,52 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 			// sort Vm and get Vm with min cost
 			TreeMap<CondorVM, Double> sortedMap = HelperFunctions.sortMapByValue(costsVm);
 
-			if (task.isCritical()) {
-				Entry<CondorVM, Double> firstEntry = sortedMap.firstEntry();
-				task.setVmId(firstEntry.getKey().getId());
-				totalCost += firstEntry.getValue();
-				System.out.println("task: " + task.getCloudletId() + " is critical, assigned vm: " + task.getVmId());	
-			
-			} else {
-				// new
+			allotVMs(sortedMap, depthList);
+		}
+
+	}
+
+	private void allotVMs(TreeMap<CondorVM, Double> sortedMap, Map<Integer, List<Integer>> map) {
+
+		for (Map.Entry<Integer, Double> entry : deadlineMap.entrySet()) {
+			int depth = entry.getKey();
+			double deadline = entry.getValue();
+			int index = 0;
+			for (int i = 0; i < getTaskList().size(); i++) {
+				Task task = (Task) getTaskList().get(i);
 				int size = map.get(task.getDepth()).size();
-
-				CondorVM vm = (CondorVM) sortedMap.keySet().toArray()[index];
-				index++;
-				if (index == size) {
-					index = 1;
+				double weight = deadline;
+				double remainingWt = 0;
+				if (!task.isCritical() && taskFlags.get(task.getCloudletId()) == false) {
+					if (task.getDepth() == depth) {
+						CondorVM vm = (CondorVM) sortedMap.keySet().toArray()[index];
+						remainingWt = weight - (task.getCloudletLength() / vm.getMips());
+						if (remainingWt < 0) {
+							index++;
+							if (index == size - 1) {
+								index = 0;
+							}
+						}
+						vm = (CondorVM) sortedMap.keySet().toArray()[index];
+						task.setVmId(vm.getId());
+						totalCost += (task.getCloudletLength() / vm.getMips());
+						taskFlags.put(task.getCloudletId(), true);
+						Log.printLine("task(" + task.getCloudletId() + "): " + task.getVmId() + " cost: "
+								+ task.getCloudletLength() / vm.getMips());
+					}
+				} else if (task.isCritical() && taskFlags.get(task.getCloudletId()) == false) {
+					if (task.getDepth() == depth) {
+						CondorVM vm = (CondorVM) sortedMap.keySet().toArray()[0];
+						task.setVmId(vm.getId());
+						totalCost += (task.getCloudletLength() / vm.getMips());
+						taskFlags.put(task.getCloudletId(), true);
+						Log.printLine("task(" + task.getCloudletId() + "): " + task.getVmId() + " cost: "
+								+ (task.getCloudletLength() / vm.getMips()));
+					}
 				}
-				System.out.println("VM: " + vm.getId() + " to task: " + task.getCloudletId() + " at index: " + index);
 
-				task.setVmId(vm.getId());
-				totalCost += costsVm.get(vm);		
 			}
 		}
-	}*/
-	
-	private void createBags(int index, Task task, TreeMap<CondorVM, Double> sortedMap, Map<CondorVM, Double> costsVm,
-			Map<Integer, List<Integer>> map) {
-		int size = map.get(task.getDepth()).size();
-		while(true) {
-
-			CondorVM vm = task.isCritical() == true ? sortedMap.firstEntry().getKey()
-					: (CondorVM) sortedMap.keySet().toArray()[index];
-			double spareTime = task.getDuration() - (task.getCloudletLength() / vm.getMips());
-                                  			
-			if (spareTime >= 0) {
-				task.setVmId(vm.getId());
-				totalCost += costsVm.get(vm);
-				System.out.println("VM: " + vm.getId() + " to task: " + task.getCloudletId() + " at index: " + index);
-				break;
-			} else {
-				index++;
-				if (index == size) {
-					index = 1;
-				}
-			}
-		}
-
 	}
 
 	private Map<Integer, List<Integer>> createLists() {
@@ -152,11 +169,10 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 				} else {
 
 					if ((task.getCloudletLength() / vm.getMips()) <= taskDuration) {
-						costsVm.put(vm, task.getCloudletTotalLength() / vm.getMips()); // +
-																						// (transferCosts.get(task)*vm.getBw()))
-																						// / 2);
+						costsVm.put(vm, task.getCloudletLength() / vm.getMips()); // +
+																					// (transferCosts.get(task)*vm.getBw()))
+																					// / 2);
 					}
-
 				}
 			}
 			if (costsVm.size() == 0) {
@@ -210,11 +226,7 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 				task.setLateFinishTime(min);
 				task.setLateStartTime(task.getLateFinishTime() - task.getDuration());
 			}
-			// System.out.println("LF(" + task.getCloudletId() + "): " +
-			// task.getCloudletLength() + " "
-			// + task.getLateFinishTime() + " " + task.getLateStartTime());
 		}
-
 	}
 
 	private void forwardPass() {
@@ -234,73 +246,5 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 				task.setEarlyFinishTime(task.getEarlyStartTime() + task.getDuration());
 			}
 		}
-	}
-
-	/**
-	 * Populates the transferCosts map with the time in seconds to transfer all
-	 * files from each parent to each child
-	 */
-	private void calculateTransferCosts() {
-
-		for (Object taskObject1 : getTaskList()) {
-			Task task1 = (Task) taskObject1;
-			Map<Task, Double> taskTransferCosts = new HashMap<Task, Double>();
-
-			transferCosts.put(task1, 0.0);
-		}
-
-		// Calculating the actual values
-		double totalCost = 0;
-		for (Object parentObject : getTaskList()) {
-			Task parent = (Task) parentObject;
-			for (Task child : parent.getChildList()) {
-				totalCost += calculateTransferCost(parent, child);
-
-			}
-			transferCosts.put(parent, totalCost);
-		}
-	}
-
-	/**
-	 * Accounts the time in seconds necessary to transfer all files described
-	 * between parent and child
-	 *
-	 * @param parent
-	 * @param child
-	 * @return Transfer cost in seconds
-	 */
-	private double calculateTransferCost(Task parent, Task child) {
-		List<File> parentFiles = (List<File>) parent.getFileList();
-		List<File> childFiles = (List<File>) child.getFileList();
-
-		double acc = 0.0;
-
-		for (File parentFile : parentFiles) {
-			if (parentFile.getType() != Parameters.FileType.OUTPUT.value) {
-				continue;
-			}
-
-			for (File childFile : childFiles) {
-				if (childFile.getType() == Parameters.FileType.INPUT.value
-						&& childFile.getName().equals(parentFile.getName())) {
-					acc += childFile.getSize();
-					break;
-				}
-			}
-		}
-
-		// file Size is in Bytes, acc in MB
-		acc = acc / Consts.MILLION;
-		// acc in MB, averageBandwidth in Mb/s
-		return acc * 8 / averageBandwidth;
-	}
-
-	private double calculateAverageBandwidth() {
-		double avg = 0.0;
-		for (Object vmObject : getVmList()) {
-			CondorVM vm = (CondorVM) vmObject;
-			avg += vm.getBw();
-		}
-		return avg / getVmList().size();
 	}
 }
