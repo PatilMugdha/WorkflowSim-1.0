@@ -6,34 +6,26 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import org.cloudbus.cloudsim.Consts;
-import org.cloudbus.cloudsim.File;
 import org.cloudbus.cloudsim.Log;
 import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
 import org.workflowsim.planning.BasePlanningAlgorithm;
 import org.workflowsim.utils.HelperFunctions;
-import org.workflowsim.utils.Parameters;
 
 public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 
-	private List<Task> statusUpdatedTaskList = new ArrayList<Task>();
-	private Map<Task, Double> transferCosts = new HashMap<Task, Double>();
-	private Map<Task, Map<CondorVM, Double>> computationCosts = new HashMap<Task, Map<CondorVM, Double>>();
-	private double averageBandwidth;
+	//private List<Task> statusUpdatedTaskList = new ArrayList<Task>();
+	private Map<Task, Map<CondorVM, Double>> taskVmCostValues = new HashMap<Task, Map<CondorVM, Double>>();
 	private double totalCost;
 	private Map<Integer, Double> deadlineMap = new HashMap<Integer, Double>();
 	private HashMap<Integer, Boolean> taskFlags = new HashMap<Integer, Boolean>();
-	private HashMap<Integer, Double> vmMap;
 
 	@Override
 	public void run() throws Exception {
 
 		Log.printLine("Critical path-based algorithm running with " + getTaskList().size() + " tasks.");
-
 		forwardPass();
 		backwardPass();
 		checkCriticalPath();
@@ -51,38 +43,34 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 		}
 	}
 
-	private void createDeadlineMap(TreeMap<CondorVM, Double> sortedMap) {
+	private void addEntryToDeadlineMap() {
 		for (int i = 0; i < getTaskList().size(); i++) {
 			Task task = (Task) getTaskList().get(i);
 			if (task.isCritical()) {
 				deadlineMap.put(task.getDepth(), task.getCloudletLength() / sortedMap.firstEntry().getKey().getMips());
-                if(deadlineMap.get(task.getDepth())!=null) {
-                	deadlineMap.put(task.getDepth(), task.getCloudletLength() / sortedMap.firstEntry().getKey().getMips());
-                }
 			}
 		}
-
 	}
-
+	
+	TreeMap<CondorVM, Double> sortedMap=new TreeMap<CondorVM, Double>();
 	private void assignVmToTask() {
-		Map<Integer, List<Integer>> depthList = createLists();
+		Map<Integer, List<Integer>> depthList = groupTasksAtSameDepth();
 
 		for (int i = 0; i < getTaskList().size(); i++) {
 			Task task = (Task) getTaskList().get(i);
-			Map<CondorVM, Double> costsVm = computationCosts.get(task);
+			Map<CondorVM, Double> costsVm = taskVmCostValues.get(task);
 
 			// sort Vm and get Vm with min cost
-			TreeMap<CondorVM, Double> sortedMap = HelperFunctions.sortMapByValue(costsVm);
-			createDeadlineMap(sortedMap);
+			sortedMap = HelperFunctions.sortMapByValue(costsVm);
+			addEntryToDeadlineMap();
 		}
 
 		for (int i = 0; i < getTaskList().size(); i++) {
 			Task task = (Task) getTaskList().get(i);
-			Map<CondorVM, Double> costsVm = computationCosts.get(task);
+			Map<CondorVM, Double> costsVm = taskVmCostValues.get(task);
 
 			// sort Vm and get Vm with min cost
-			TreeMap<CondorVM, Double> sortedMap = HelperFunctions.sortMapByValue(costsVm);
-
+			sortedMap = HelperFunctions.sortMapByValue(costsVm);
 			allotVMs(sortedMap, depthList);
 		}
 
@@ -131,7 +119,7 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 		}
 	}
 
-	private Map<Integer, List<Integer>> createLists() {
+	private Map<Integer, List<Integer>> groupTasksAtSameDepth() {
 
 		Iterator it = getTaskList().iterator();
 		Map<Integer, List<Integer>> map = new HashMap<Integer, List<Integer>>();
@@ -141,7 +129,6 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 				List<Integer> depthList = new ArrayList<Integer>();
 				depthList.add(entry.getCloudletId());
 				map.put(entry.getDepth(), depthList);
-
 			} else {
 				map.get(entry.getDepth()).add(entry.getCloudletId());
 			}
@@ -151,7 +138,7 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 
 	private void selectVMsByExecutionTime() {
 
-		for (Object taskObject : statusUpdatedTaskList) {
+		for (Object taskObject : getTaskList()) {
 			Task task = (Task) taskObject;
 			double taskDuration = 0.0;
 			if (task.isCritical()) {
@@ -184,7 +171,7 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 					System.out.println(entry.getKey().getId());
 				}
 			}
-			computationCosts.put(task, costsVm);
+			taskVmCostValues.put(task, costsVm);
 		}
 	}
 
@@ -202,7 +189,7 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 				task.setCritical(false);
 				nonCriticalTasks++;
 			}
-			statusUpdatedTaskList.add(task);
+			//statusUpdatedTaskList.add(task);
 		}
 		Log.printLine("CriticalTasks: " + criticalTasks + " NonCriticalTasks: " + nonCriticalTasks);
 	}
