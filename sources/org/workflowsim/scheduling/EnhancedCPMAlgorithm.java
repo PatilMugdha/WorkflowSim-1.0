@@ -16,7 +16,7 @@ import org.workflowsim.utils.HelperFunctions;
 
 public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 
-	//private List<Task> statusUpdatedTaskList = new ArrayList<Task>();
+	// private List<Task> statusUpdatedTaskList = new ArrayList<Task>();
 	private Map<Task, Map<CondorVM, Double>> taskVmCostValues = new HashMap<Task, Map<CondorVM, Double>>();
 	private double totalCost;
 	private Map<Integer, Double> deadlineMap = new HashMap<Integer, Double>();
@@ -31,9 +31,21 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 		checkCriticalPath();
 		initializeTaskStatus();
 		selectVMsByExecutionTime();
-		assignVmToTask();
+		findDeadlines();
+		allotVMs();
 		Log.printLine("Total cost: " + totalCost);
 
+	}
+
+	private void findDeadlines() {
+		for (int i = 0; i < getTaskList().size(); i++) {
+			Task task = (Task) getTaskList().get(i);
+			Map<CondorVM, Double> costsVm = taskVmCostValues.get(task);
+
+			// sort Vm and get Vm with min cost
+			sortedMap = HelperFunctions.sortMapByValue(costsVm);
+			determineLevelDeadline(i);
+		}
 	}
 
 	private void initializeTaskStatus() {
@@ -43,50 +55,37 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 		}
 	}
 
-	private void addEntryToDeadlineMap() {
-		for (int i = 0; i < getTaskList().size(); i++) {
-			Task task = (Task) getTaskList().get(i);
-			if (task.isCritical()) {
-				deadlineMap.put(task.getDepth(), task.getCloudletLength() / sortedMap.firstEntry().getKey().getMips());
+	TreeMap<CondorVM, Double> sortedMap = new TreeMap<CondorVM, Double>();
+
+	private void determineLevelDeadline(int taskIndex) {
+		Task task = (Task) getTaskList().get(taskIndex);
+		double taskCost = task.getCloudletLength() / sortedMap.firstEntry().getKey().getMips();
+		if (task.isCritical()) {
+			deadlineMap.put(task.getDepth(), taskCost);
+			if (deadlineMap.get(task.getDepth()) != null) {
+				// if there are multiple nodes in the critical path, take the minimum cost as
+				// the deadline
+				if (deadlineMap.get(task.getDepth()) > taskCost) {
+					deadlineMap.put(task.getDepth(), taskCost);
+				}
 			}
 		}
 	}
-	
-	TreeMap<CondorVM, Double> sortedMap=new TreeMap<CondorVM, Double>();
-	private void assignVmToTask() {
+
+	private void allotVMs() {
 		Map<Integer, List<Integer>> depthList = groupTasksAtSameDepth();
-
-		for (int i = 0; i < getTaskList().size(); i++) {
-			Task task = (Task) getTaskList().get(i);
-			Map<CondorVM, Double> costsVm = taskVmCostValues.get(task);
-
-			// sort Vm and get Vm with min cost
-			sortedMap = HelperFunctions.sortMapByValue(costsVm);
-			addEntryToDeadlineMap();
-		}
-
-		for (int i = 0; i < getTaskList().size(); i++) {
-			Task task = (Task) getTaskList().get(i);
-			Map<CondorVM, Double> costsVm = taskVmCostValues.get(task);
-
-			// sort Vm and get Vm with min cost
-			sortedMap = HelperFunctions.sortMapByValue(costsVm);
-			allotVMs(sortedMap, depthList);
-		}
-
-	}
-
-	private void allotVMs(TreeMap<CondorVM, Double> sortedMap, Map<Integer, List<Integer>> map) {
-
 		for (Map.Entry<Integer, Double> entry : deadlineMap.entrySet()) {
 			int depth = entry.getKey();
 			double deadline = entry.getValue();
 			int index = 0;
 			for (int i = 0; i < getTaskList().size(); i++) {
 				Task task = (Task) getTaskList().get(i);
-				int size = map.get(task.getDepth()).size();
+				int size = depthList.get(task.getDepth()).size();
 				double weight = deadline;
 				double remainingWt = 0;
+				Map<CondorVM, Double> costsVm = taskVmCostValues.get(task);
+				// sort Vm and get Vm with min cost
+				sortedMap = HelperFunctions.sortMapByValue(costsVm);
 				if (!task.isCritical() && taskFlags.get(task.getCloudletId()) == false) {
 					if (task.getDepth() == depth) {
 						CondorVM vm = (CondorVM) sortedMap.keySet().toArray()[index];
@@ -189,7 +188,7 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 				task.setCritical(false);
 				nonCriticalTasks++;
 			}
-			//statusUpdatedTaskList.add(task);
+			// statusUpdatedTaskList.add(task);
 		}
 		Log.printLine("CriticalTasks: " + criticalTasks + " NonCriticalTasks: " + nonCriticalTasks);
 	}
