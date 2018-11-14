@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.Predicate;
 import org.cloudbus.cloudsim.Log;
 import org.workflowsim.CondorVM;
 import org.workflowsim.Task;
@@ -16,109 +18,102 @@ import org.workflowsim.utils.HelperFunctions;
 
 public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 
-	// private List<Task> statusUpdatedTaskList = new ArrayList<Task>();
 	private Map<Task, Map<CondorVM, Double>> taskVmCostValues = new HashMap<Task, Map<CondorVM, Double>>();
 	private double totalCost;
 	private Map<Integer, Double> deadlineMap = new HashMap<Integer, Double>();
-	private HashMap<Integer, Boolean> taskFlags = new HashMap<Integer, Boolean>();
+	TreeMap<CondorVM, Double> sortedMap = new TreeMap<CondorVM, Double>();
 
 	@Override
 	public void run() throws Exception {
 
 		Log.printLine("Critical path-based algorithm running with " + getTaskList().size() + " tasks.");
+		double startTime = System.currentTimeMillis();
 		forwardPass();
 		backwardPass();
 		checkCriticalPath();
-		initializeTaskStatus();
 		selectVMsByExecutionTime();
 		findDeadlines();
 		allotVMs();
 		Log.printLine("Total cost: " + totalCost);
+		double endTime = System.currentTimeMillis() - startTime;
+		Log.printLine("Time reqd: " + endTime);
+	}
 
+	private List<Task> filter(int depth) {
+
+		List<Task> siblings = new ArrayList<Task>();
+		siblings.addAll(getTaskList());
+		CollectionUtils.filter(siblings, new Predicate() {
+
+			@Override
+			public boolean evaluate(Object o) {
+				return ((Task) o).getDepth() == depth;
+			}
+		});
+		return siblings;
 	}
 
 	private void findDeadlines() {
 		for (int i = 0; i < getTaskList().size(); i++) {
 			Task task = (Task) getTaskList().get(i);
 			Map<CondorVM, Double> costsVm = taskVmCostValues.get(task);
-
 			// sort Vm and get Vm with min cost
 			sortedMap = HelperFunctions.sortMapByValue(costsVm);
-			determineLevelDeadline(i);
-		}
-	}
-
-	private void initializeTaskStatus() {
-		for (int i = 0; i < getTaskList().size(); i++) {
-			Task task = (Task) getTaskList().get(i);
-			taskFlags.put(task.getCloudletId(), false);
-		}
-	}
-
-	TreeMap<CondorVM, Double> sortedMap = new TreeMap<CondorVM, Double>();
-
-	private void determineLevelDeadline(int taskIndex) {
-		Task task = (Task) getTaskList().get(taskIndex);
-		double taskCost = task.getCloudletLength() / sortedMap.firstEntry().getKey().getMips();
-		if (task.isCritical()) {
-			deadlineMap.put(task.getDepth(), taskCost);
-			if (deadlineMap.get(task.getDepth()) != null) {
-				// if there are multiple nodes in the critical path, take the minimum cost as
-				// the deadline
-				if (deadlineMap.get(task.getDepth()) > taskCost) {
-					deadlineMap.put(task.getDepth(), taskCost);
+			if (task.isCritical()) {
+				double taskCost = task.getCloudletLength() / sortedMap.firstEntry().getKey().getMips();
+				deadlineMap.put(task.getDepth(), taskCost);
+				if (deadlineMap.get(task.getDepth()) != null) {
+					// if there are multiple critical paths, take the maximum deadline
+					// as the overall deadline for that depth
+					if (deadlineMap.get(task.getDepth()) < taskCost) {
+						deadlineMap.put(task.getDepth(), taskCost);
+					}
 				}
 			}
 		}
 	}
 
 	private void allotVMs() {
-		Map<Integer, List<Integer>> depthList = groupTasksAtSameDepth();
+		// Time-complexity = O(maximum_depth*k) where k=number of siblings at depth i
+		//Map<Integer, List<Integer>> depthList = groupTasksAtSameDepth();
 		for (Map.Entry<Integer, Double> entry : deadlineMap.entrySet()) {
 			int depth = entry.getKey();
 			double deadline = entry.getValue();
 			int index = 0;
-			for (int i = 0; i < getTaskList().size(); i++) {
-				Task task = (Task) getTaskList().get(i);
-				int size = depthList.get(task.getDepth()).size();
+			List<Task> siblings = filter(depth);
+			int size = siblings.size();//depthList.get(depth).size(); // total tasks in the same depth
+			for (int i = 0; i < size; i++) {
+				Task task = (Task) siblings.get(i);
 				double weight = deadline;
 				double remainingWt = 0;
+				CondorVM vm = null;
 				Map<CondorVM, Double> costsVm = taskVmCostValues.get(task);
 				// sort Vm and get Vm with min cost
 				sortedMap = HelperFunctions.sortMapByValue(costsVm);
-				if (!task.isCritical() && taskFlags.get(task.getCloudletId()) == false) {
-					if (task.getDepth() == depth) {
-						CondorVM vm = (CondorVM) sortedMap.keySet().toArray()[index];
-						remainingWt = weight - (task.getCloudletLength() / vm.getMips());
-						if (remainingWt < 0) {
-							index++;
-							if (index == size - 1) {
-								index = 0;
-							}
+				if (!task.isCritical()) {
+					vm = (CondorVM) sortedMap.keySet().toArray()[index];
+					remainingWt = weight - (task.getCloudletLength() / vm.getMips());
+					if (remainingWt < 0) {
+						index++;
+						if (index >= sortedMap.size() - 1) {
+							index = 0;
 						}
+						// re-select VM with new index
 						vm = (CondorVM) sortedMap.keySet().toArray()[index];
-						task.setVmId(vm.getId());
-						totalCost += (task.getCloudletLength() / vm.getMips());
-						taskFlags.put(task.getCloudletId(), true);
-						Log.printLine("task(" + task.getCloudletId() + "): " + task.getVmId() + " cost: "
-								+ task.getCloudletLength() / vm.getMips());
 					}
-				} else if (task.isCritical() && taskFlags.get(task.getCloudletId()) == false) {
-					if (task.getDepth() == depth) {
-						CondorVM vm = (CondorVM) sortedMap.keySet().toArray()[0];
-						task.setVmId(vm.getId());
-						totalCost += (task.getCloudletLength() / vm.getMips());
-						taskFlags.put(task.getCloudletId(), true);
-						Log.printLine("task(" + task.getCloudletId() + "): " + task.getVmId() + " cost: "
-								+ (task.getCloudletLength() / vm.getMips()));
-					}
+					task.setVmId(vm.getId());
+				} else if (task.isCritical()) {
+					vm = (CondorVM) sortedMap.keySet().toArray()[0];
 				}
-
+				task.setVmId(vm.getId());
+				totalCost += (task.getCloudletLength() / vm.getMips());
+				Log.printLine("task(" + task.getCloudletId() + "): " + task.getVmId() + " cost: "
+						+ (task.getCloudletLength() / vm.getMips()));
 			}
 		}
 	}
 
-	private Map<Integer, List<Integer>> groupTasksAtSameDepth() {
+/*	private Map<Integer, List<Integer>> groupTasksAtSameDepth() {
 
 		Iterator it = getTaskList().iterator();
 		Map<Integer, List<Integer>> map = new HashMap<Integer, List<Integer>>();
@@ -133,7 +128,7 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 			}
 		}
 		return map;
-	}
+	}*/
 
 	private void selectVMsByExecutionTime() {
 
@@ -145,7 +140,7 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 			} else {
 				taskDuration = task.getDuration() + task.getSlack();
 			}
-
+			Log.printLine("Dur for task"+task.getCloudletId()+" "+taskDuration);
 			Map<CondorVM, Double> costsVm = new HashMap<CondorVM, Double>();
 
 			for (Object vmObject : getVmList()) {
@@ -155,9 +150,9 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 				} else {
 
 					if ((task.getCloudletLength() / vm.getMips()) <= taskDuration) {
-						costsVm.put(vm, task.getCloudletLength() / vm.getMips()); // +
-																					// (transferCosts.get(task)*vm.getBw()))
-																					// / 2);
+						costsVm.put(vm, task.getCloudletLength() / vm.getMips());
+					}else {
+						
 					}
 				}
 			}
@@ -188,7 +183,6 @@ public class EnhancedCPMAlgorithm extends BasePlanningAlgorithm {
 				task.setCritical(false);
 				nonCriticalTasks++;
 			}
-			// statusUpdatedTaskList.add(task);
 		}
 		Log.printLine("CriticalTasks: " + criticalTasks + " NonCriticalTasks: " + nonCriticalTasks);
 	}
